@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FixZtream</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <img src="icons/32.png" alt="" width="28" height="28">
+      <div>
+        <h1>FixZtream</h1>
+        <p>Windows troubleshooting kit</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span id="hostPill" class="pill"><i></i><span>Checking host…</span></span>
+      <button id="searchBtn" class="icon-btn" title="Search all actions (Ctrl+K)" aria-label="Search all actions">
+        <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><circle cx="7" cy="7" r="4.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10.4 10.4L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <button id="sideBtn" class="icon-btn" title="Pin to side panel" aria-label="Open in side panel">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="9.5" y="2.5" width="5" height="11" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <section id="setup" class="setup" hidden>
+    <h2>Install the companion helper</h2>
+    <p>Chrome can't run PowerShell on its own. A small helper on your PC does it — set it up once:</p>
+    <a class="dl-btn" href="https://github.com/MarkGenerosa/Fixztream/releases/download/Fixztream/FixZtreamHost_CompanionHelper.zip" target="_blank" rel="noopener">
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 2v8m0 0L4.8 6.8M8 10l3.2-3.2M2.5 11.5v1a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Download helper</span><small>.zip from GitHub</small>
+    </a>
+    <ol>
+      <li>Open the downloaded zip and click <b>Extract all</b>.</li>
+      <li>Right-click <code>install.ps1</code> → <b>Run with PowerShell</b> and approve the admin prompt. <span class="muted">(Windows 11: under “Show more options”.)</span></li>
+      <li>Come back here and press <b>↻</b>.</li>
+    </ol>
+    <p class="setup-err" id="setupErr"></p>
+  </section>
+
+  <section id="helperUpdate" class="setup update" hidden>
+    <h2>Helper update available</h2>
+    <p>New jobs need helper <b id="helperNeed">2.0.0</b> — you have <b id="helperHave">1.0.0</b>. Download it and run <code>install.ps1</code> again; it replaces the old one.</p>
+    <a class="dl-btn" href="https://github.com/MarkGenerosa/Fixztream/releases/download/Fixztream/FixZtreamHost_CompanionHelper.zip" target="_blank" rel="noopener">
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 2v8m0 0L4.8 6.8M8 10l3.2-3.2M2.5 11.5v1a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Download helper update</span><small>.zip from GitHub</small>
+    </a>
+  </section>
+
+  <section class="strip" aria-label="Live status">
+    <div class="gauge" data-svc="wuauserv"><span class="led"></span><div><b>wuauserv</b><small>—</small></div></div>
+    <div class="gauge" data-svc="BITS"><span class="led"></span><div><b>BITS</b><small>—</small></div></div>
+    <div class="gauge" id="cacheGauge"><span class="led led-info"></span><div><b>Update cache</b><small>—</small></div></div>
+    <button id="refresh" class="icon-btn" title="Refresh status" aria-label="Refresh status">
+      <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </section>
+  <div class="sysline" id="sysline" hidden></div>
+
+  <section id="running" class="console" hidden aria-live="polite">
+    <div class="console-head">
+      <span class="spinner" aria-hidden="true"></span>
+      <b id="runLabel">Running</b>
+      <span id="runTimer" class="mono">00:00</span>
+    </div>
+    <ol id="runLines" class="lines"></ol>
+  </section>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav>
+
+  <div id="panels">
+    <section class="tabpanel" id="tab-repair" data-tab="repair" role="tabpanel"></section>
+    <section class="tabpanel" id="tab-update" data-tab="update" role="tabpanel" hidden></section>
+    <section class="tabpanel" id="tab-network" data-tab="network" role="tabpanel" hidden></section>
+    <section class="tabpanel" id="tab-devices" data-tab="devices" role="tabpanel" hidden></section>
+    <section class="tabpanel" id="tab-browser" data-tab="browser" role="tabpanel" hidden>
+      <h2 class="sec"><span>This site</span></h2>
+  <article class="mod site" id="siteMod">
+    <span class="tile" id="siteTile" aria-hidden="true">
+      <svg viewBox="0 0 16 16" width="18" height="18"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M1.8 8h12.4M8 1.8c1.9 2 1.9 10.4 0 12.4M8 1.8c-1.9 2-1.9 10.4 0 12.4" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+    </span>
+    <button class="body site-head" id="siteToggle" aria-expanded="false" aria-controls="sitePanel">
+      <h3>Clear site data</h3>
+      <code id="siteHost">Checking this tab…</code>
+    </button>
+    <button class="dd" id="siteToggle2" aria-expanded="false" aria-controls="sitePanel" aria-label="Show site details">
+      <span id="siteTotal" class="dd-total"></span>
+      <svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+
+    <div class="site-panel" id="sitePanel" hidden>
+      <div class="usage" id="usage">
+        <div class="usage-head">
+          <span><b id="usageTotal">—</b> storage used</span>
+          <button id="usageRefresh" class="icon-btn sm" title="Re-read storage" aria-label="Re-read storage">
+            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="ubar" id="ubar" role="img" aria-label="Storage breakdown"></div>
+        <ul class="ulegend" id="ulegend"></ul>
+        <p class="usage-note" id="usageNote" hidden></p>
+      </div>
+
+      <fieldset class="opts">
+        <legend>Removal options</legend>
+        <div class="scope" role="radiogroup" aria-label="Scope">
+          <label><input type="radio" name="scope" value="site" checked><span id="scopeSite">This site</span></label>
+          <label><input type="radio" name="scope" value="all"><span>All web sites</span></label>
+        </div>
+        <div id="siteGroups"></div>
+        <label class="reload"><input type="checkbox" id="optReload" checked> Reload the tab afterwards</label>
+      </fieldset>
+
+      <p class="warn-note" id="cookieNote" hidden></p>
+      <button class="run wide" id="clearBtn"><span>Clear site data</span></button>
+    </div>
+  </article>
+
+      <h2 class="sec"><span>Chrome shortcuts</span></h2>
+      <div class="linkgrid" id="chromeLinks"></div>
+    </section>
+    <section class="tabpanel" id="tab-tools" data-tab="tools" role="tabpanel" hidden></section>
+  </div>
+
+  <section class="log">
+    <div class="log-head">
+      <h2>Activity log</h2>
+      <div class="seg" role="tablist" aria-label="Filter">
+        <button data-filter="all" aria-pressed="true">All</button>
+        <button data-filter="ok" aria-pressed="false">OK</button>
+        <button data-filter="fail" aria-pressed="false">Failed</button>
+      </div>
+    </div>
+    <ol id="logList" class="entries"></ol>
+    <p id="logEmpty" class="empty">Nothing yet. Every run lands here with its full output.</p>
+    <div class="log-tools">
+      <button id="copyLog" class="text-btn">Copy</button>
+      <button id="exportLog" class="text-btn">Export .txt</button>
+      <button id="clearLog" class="text-btn danger">Clear</button>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <kbd>Ctrl</kbd> <kbd>K</kbd> search · <kbd>1</kbd>–<kbd>6</kbd> switch tabs · Windows jobs ask for admin (UAC) and log to <code>%ProgramData%\FixZtream</code>
+    <div class="foot-links">
+      <a href="https://github.com/MarkGenerosa/Fixztream/releases/download/Fixztream/FixZtreamHost_CompanionHelper.zip" target="_blank" rel="noopener">Download helper</a> ·
+      <a href="https://github.com/MarkGenerosa/Fixztream/releases" target="_blank" rel="noopener">Releases &amp; source</a> ·
+      <a href="https://workztream.com" target="_blank" rel="noopener">Full toolkit: Workztream</a>
+    </div>
+  </footer>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <div id="palette" class="palette" hidden>
+    <div class="pal-box" role="dialog" aria-modal="true" aria-label="Search actions">
+      <div class="pal-input">
+        <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><circle cx="7" cy="7" r="4.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10.4 10.4L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <input id="palInput" type="text" placeholder="Search — e.g. dns, printer, sfc, battery" autocomplete="off" spellcheck="false" aria-controls="palList">
+        <kbd>Esc</kbd>
+      </div>
+      <ul id="palList" class="pal-list" role="listbox"></ul>
+      <p class="pal-foot"><kbd>↑</kbd><kbd>↓</kbd> choose · <kbd>Enter</kbd> jumps to a job (it won’t run until you press its button) · opens tools and pages</p>
+    </div>
+  </div>
+
+  <script src="actions.js"></script>
+  <script src="panel.js"></script>
+</body>
+</html>
